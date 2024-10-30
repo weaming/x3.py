@@ -7,6 +7,7 @@ import argparse, os
 from datetime import datetime
 from typing import Union
 from io import BytesIO
+import subprocess
 
 import rawpy
 from rawpy import ColorSpace, FBDDNoiseReductionMode, HighlightMode, Thumbnail
@@ -67,6 +68,31 @@ def read_lut(lut_path: str, clip=False) -> Union[LUT3D, LUT3x1D]:
     return lut
 
 
+# EXIF
+# exiftool -G1 -a -s -EXIF:all SDQ01.X3F
+
+
+def get_orientation(raw_path):
+    process = subprocess.Popen(
+        f'exiftool -G1 -a -s -EXIF:all "{raw_path}" | grep -v IFD1 | grep Orientation',
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    output, error = process.communicate()
+    orientation = str(output).split(':')[1].strip()
+
+    # Counter ClockWise
+    # 0=none, 3=180, 5=90CCW, 6=90CW
+    if '270' in orientation:  # Rotate 270 CW
+        return 5, 90
+    elif '90' in orientation:
+        return 6, 270
+    elif '180' in orientation:
+        return 3, 180
+    return None, None
+
+
 # X3F
 
 
@@ -97,11 +123,15 @@ def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False)
         # layers = d.raw_image_visible
         # write_layers(layers)
         color_size = 65535
+        flip, angle = get_orientation(raw_path)
         if preview:
             thumb: Thumbnail = raw.extract_thumb()
             print('thumnail type:', thumb.format)
             img = Image.open(BytesIO(thumb.data))
-            img = img.resize((int(raw.sizes.width / 5), int(raw.sizes.height / 5)), Image.LANCZOS)
+            img = img.resize((int(raw.sizes.width / 4), int(raw.sizes.height / 4)), Image.LANCZOS)
+            # resize then rotate
+            if angle is not None:
+                img = img.rotate(angle, expand=True)
             rgb = np.array(img)
             color_size = 255
         else:
@@ -119,7 +149,7 @@ def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False)
                 output_color=ColorSpace.sRGB,
                 output_bps=16,  # important
                 # custom
-                user_flip=None,
+                user_flip=flip,
                 user_black=None,
                 user_sat=None,
                 # brightness
