@@ -106,7 +106,7 @@ def write_layers(layers):
     iio.imwrite(f'raw.tiff', layers)
 
 
-def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False, scale: int = 1):
+def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_to_jpg=False):
     lut = {}
     if lut_path:
         lut = read_lut(lut_path)
@@ -173,6 +173,9 @@ def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False,
         if preview:
             rgb = rgb.astype(np.uint8)
             iio.imwrite(replace_extension(raw_path, '.jpg'), rgb)
+        elif raw_to_jpg:
+            rgb = np.clip(rgb.astype(np.float32) / color_size * 255, 0, 255).astype(np.uint8)
+            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb)
         else:
             iio.imwrite(replace_extension(raw_path, '.dng'), rgb)
 
@@ -182,8 +185,15 @@ def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False,
 parser = argparse.ArgumentParser()
 parser.add_argument('file', help='path to the .x3f raw file')
 parser.add_argument('-l', '--lut', help='path to the .cube file')
+parser.add_argument('-j', '--jpg', action='store_true', help='export raw as jpg')
 parser.add_argument('-p', '--preview', action='store_true', help='use thumbnail instead of full resolution')
 parser.add_argument('-s', '--scale', type=int, help='scale down thumbnail', default=4)
 args = parser.parse_args()
 
-raw_to_tiff_or_thumbnail_to_jpg(args.file, args.lut, args.preview, args.scale)
+parse_x3f(
+    args.file,
+    args.lut,
+    preview=args.preview,
+    scale=args.scale,
+    raw_to_jpg=args.jpg,
+)
