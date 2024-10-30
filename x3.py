@@ -106,7 +106,7 @@ def write_layers(layers):
     iio.imwrite(f'raw.tiff', layers)
 
 
-def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False):
+def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False, scale: int = 1):
     lut = {}
     if lut_path:
         lut = read_lut(lut_path)
@@ -128,7 +128,7 @@ def raw_to_tiff_or_thumbnail_to_jpg(raw_path: str, lut_path: str, preview=False)
             thumb: Thumbnail = raw.extract_thumb()
             print('thumnail type:', thumb.format)
             img = Image.open(BytesIO(thumb.data))
-            img = img.resize((int(raw.sizes.width / 4), int(raw.sizes.height / 4)), Image.LANCZOS)
+            img = img.resize((int(raw.sizes.width / scale), int(raw.sizes.height / scale)), Image.LANCZOS)
             # resize then rotate
             if angle is not None:
                 img = img.rotate(angle, expand=True)
@@ -183,6 +183,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('file', help='path to the .x3f raw file')
 parser.add_argument('-l', '--lut', help='path to the .cube file')
 parser.add_argument('-p', '--preview', action='store_true', help='use thumbnail instead of full resolution')
+parser.add_argument('-s', '--scale', type=int, help='scale down thumbnail', default=4)
 args = parser.parse_args()
 
-raw_to_tiff_or_thumbnail_to_jpg(args.file, args.lut, args.preview)
+raw_to_tiff_or_thumbnail_to_jpg(args.file, args.lut, args.preview, args.scale)
