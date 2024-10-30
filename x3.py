@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pip3 install rawpy imageio numpy
+# pip3 install numpy==1.26.4 rawpy colour-science imageio pillow
 # useful repos:
 # https://github.com/duolanda/smart-lut-creator
 
