@@ -76,7 +76,7 @@ def parse_jpg(jpg_path: str, lut: LUT, scale: int = 1):
         start = datetime.now()
         rgb = apply_lut(np.array(img), lut)
         print(f'{datetime.now() - start}: {jpg_path}')
-        iio.imwrite(replace_extension(jpg_path, '.lut.jpg'), rgb)
+        iio.imwrite(replace_extension(jpg_path, '.lut.jpg'), rgb, quality=98, subsampling='4:4:4')
 
 
 # CLI

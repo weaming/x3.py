@@ -16,6 +16,8 @@ import imageio.v3 as iio
 from colour.io.luts.iridas_cube import read_LUT_IridasCube, LUT3D, LUT3x1D
 from PIL import Image
 
+jpg_kwargs = dict(quality=98, subsampling='4:4:4')
+
 
 def replace_extension(path, new_extension):
     root, _ = os.path.splitext(path)
@@ -173,10 +175,10 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
             print(f'time cost for apply_lut: {datetime.now() - start}')
         if preview:
             rgb = rgb.astype(np.uint8)
-            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb)
+            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb, **jpg_kwargs)
         elif raw_to_jpg:
             rgb = np.clip(rgb.astype(np.float32) / color_size * 255, 0, 255).astype(np.uint8)
-            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb)
+            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb, **jpg_kwargs)
         else:
             iio.imwrite(replace_extension(raw_path, '.dng'), rgb)
 
