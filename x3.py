@@ -2,6 +2,14 @@
 # pip3 install numpy==1.26.4 rawpy colour-science imageio pillow
 # useful repos:
 # https://github.com/duolanda/smart-lut-creator
+# https://github.com/ncruces/dcraw
+#
+# useful links:
+# x3f_dump_raw_data_as_dng: https://github.com/Kalpanika/x3f/blob/master/src/x3f_extract.c#L406-L410
+# TIFF has color space, but DNG doesn't.
+# x3f_get_image: https://github.com/Kalpanika/x3f/blob/master/src/x3f_process.c#L904-L913
+# x3f_denoise: https://github.com/Kalpanika/x3f/blob/master/src/x3f_denoise.cpp#L55-L68
+# denoise_nlm: https://github.com/Kalpanika/x3f/blob/master/src/x3f_denoise.cpp#L25-L53
 
 import argparse, os
 from datetime import datetime
@@ -139,31 +147,28 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
             color_size = 255
         else:
             rgb: np.ndarray = raw.postprocess(
-                # noise reduction
-                fbdd_noise_reduction=FBDDNoiseReductionMode.Full,
-                noise_thr=0.2,
-                median_filter_passes=2,
                 # WB
                 use_camera_wb=True,  # important
-                use_auto_wb=False,
-                user_wb=None,
-                chromatic_aberration=(1, 1),
+                # use_auto_wb=False,
+                # user_wb=None,
+                # chromatic_aberration=(1, 1),
                 # quality
-                output_color=ColorSpace.sRGB,
+                # output_color=ColorSpace.sRGB,
+                output_color=ColorSpace.ProPhoto,
                 output_bps=16,  # important
                 # custom
                 user_flip=flip,
-                user_black=None,
-                user_sat=None,
+                # user_black=None,
+                # user_sat=None,
                 # brightness
                 # gamma=(1, 1),  # important
                 # gamma=(2.222, 4.5),  # Rec.709
                 gamma=(2.4, 12.92),  # Rec.2020
                 # no_auto_bright=True,  # important
-                auto_bright_thr=0.0001,
-                bright=1,
+                auto_bright_thr=0.001,
+                bright=1.0,
                 highlight_mode=HighlightMode.Blend,
-                exp_shift=1.4,
+                exp_shift=1.0,
                 exp_preserve_highlights=1.0,  # important
                 # resolution
                 no_auto_scale=True,
@@ -173,14 +178,20 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
             start = datetime.now()
             rgb = apply_lut(rgb, lut, color_size=color_size)
             print(f'time cost for apply_lut: {datetime.now() - start}')
+
         if preview:
             rgb = rgb.astype(np.uint8)
-            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb, **jpg_kwargs)
+            output = replace_extension(raw_path, '.jpg')
+            iio.imwrite(output, rgb, **jpg_kwargs)
         elif raw_to_jpg:
             rgb = np.clip(rgb.astype(np.float32) / color_size * 255, 0, 255).astype(np.uint8)
-            iio.imwrite(replace_extension(raw_path, '.jpg'), rgb, **jpg_kwargs)
+            output = replace_extension(raw_path, '.jpg')
+            iio.imwrite(output, rgb, **jpg_kwargs)
         else:
-            iio.imwrite(replace_extension(raw_path, '.dng'), rgb)
+            output = replace_extension(raw_path, '.dng')
+            iio.imwrite(output, rgb)
+
+        print(output)
 
 
 # CLI
