@@ -72,6 +72,7 @@ def read_lut(lut_path: str, clip=False) -> Union[LUT3D, LUT3x1D]:
 # exiftool -G1 -a -s -EXIF:all SDQ01.X3F
 
 
+# return flip(rawpy), rotate angle
 def get_orientation(raw_path):
     process = subprocess.Popen(
         f'exiftool -G1 -a -s -EXIF:all "{raw_path}" | grep -v IFD1 | grep Orientation',
@@ -84,7 +85,7 @@ def get_orientation(raw_path):
 
     # Counter ClockWise
     # 0=none, 3=180, 5=90CCW, 6=90CW
-    if '270' in orientation:  # Rotate 270 CW
+    if '270' in orientation:  # e.g. Rotate 270 CW
         return 5, 90
     elif '90' in orientation:
         return 6, 270
@@ -128,7 +129,7 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
             thumb: Thumbnail = raw.extract_thumb()
             print('thumnail type:', thumb.format)
             img = Image.open(BytesIO(thumb.data))
-            img = img.resize((int(raw.sizes.width / scale), int(raw.sizes.height / scale)), Image.LANCZOS)
+            img = img.resize((int(raw.sizes.width / scale), int(raw.sizes.height / scale)))
             # resize then rotate
             if angle is not None:
                 img = img.rotate(angle, expand=True)
