@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
-# pip3 install numpy==1.26.4 rawpy colour-science imageio pillow
-# useful repos:
-# https://github.com/duolanda/smart-lut-creator
+# pip3 install numpy colour-science imageio pillow
 
 import argparse, os
 from datetime import datetime
 from typing import Union
-from io import BytesIO
-import subprocess
 
-import rawpy
-from rawpy import ColorSpace, FBDDNoiseReductionMode, HighlightMode, Thumbnail
 import numpy as np
 import imageio.v3 as iio
 from colour.io.luts.iridas_cube import read_LUT_IridasCube, LUT3D, LUT3x1D
