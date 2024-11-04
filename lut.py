@@ -4,8 +4,11 @@
 import argparse, os
 from datetime import datetime
 from typing import Union
+from contextlib import contextmanager
 
 import numpy as np
+import rawpy
+from rawpy import ColorSpace
 import imageio.v3 as iio
 from colour.io.luts.iridas_cube import read_LUT_IridasCube, LUT3D, LUT3x1D
 from PIL import Image
@@ -66,17 +69,41 @@ def read_lut(lut_path: str, clip=False) -> LUT:
 # X3F
 
 
+@contextmanager
+def open_image(img_path: str):
+    if img_path.lower().endswith('.dng'):
+        with rawpy.imread(img_path) as raw:
+            img = Image.fromarray(
+                raw.postprocess(
+                    output_color=ColorSpace.sRGB,
+                    auto_bright_thr=0.001,
+                    # gamma=(2.222, 4.5),  # Rec.709
+                    # gamma=(2.4, 12.92),  # Rec.2020
+                )
+            )
+            yield img, True
+    else:
+        with open(img_path, 'rb') as f:
+            img = Image.open(f)
+            yield img, False
+
+
 def parse_jpg(jpg_path: str, lut: LUT, scale: int = 1):
-    with open(jpg_path, 'rb') as f:
-        img = Image.open(f)
+    with open_image(jpg_path) as (img, dng):
+        icc = None
+        if not dng:
+            icc = img.info.get('icc_profile')
+            print('icc:', icc)
 
         if scale > 1:
             img = img.resize((int(img.width / scale), int(img.height / scale)))
 
         start = datetime.now()
         rgb = apply_lut(np.array(img), lut)
-        print(f'{datetime.now() - start}: {jpg_path}')
-        iio.imwrite(replace_extension(jpg_path, '.lut.jpg'), rgb, quality=98, subsampling='4:4:4')
+        out_path = replace_extension(jpg_path, '.lut.jpg')
+        print(f'{datetime.now() - start}: {out_path}')
+
+        iio.imwrite(out_path, rgb, quality=98, subsampling='4:4:4', icc_profile=icc)
 
 
 # CLI

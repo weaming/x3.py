@@ -18,7 +18,7 @@ from io import BytesIO
 import subprocess
 
 import rawpy
-from rawpy import ColorSpace, FBDDNoiseReductionMode, HighlightMode, Thumbnail
+from rawpy import ColorSpace, HighlightMode, Thumbnail
 import numpy as np
 import imageio.v3 as iio
 from colour.io.luts.iridas_cube import read_LUT_IridasCube, LUT3D, LUT3x1D
@@ -131,7 +131,7 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
     # gamma=None, chromatic_aberration=None, bad_pixels_path=None
 
     with rawpy.imread(raw_path) as raw:
-        # layers = d.raw_image_visible
+        # layers = raw.raw_image_visible
         # write_layers(layers)
         color_size = 65535
         flip, angle = get_orientation(raw_path)
@@ -197,17 +197,18 @@ def parse_x3f(raw_path: str, lut_path: str, preview=False, scale: int = 1, raw_t
 # CLI
 
 parser = argparse.ArgumentParser()
-parser.add_argument('file', help='path to the .x3f raw file')
+parser.add_argument('file', nargs='+', help='path to the .x3f raw file')
 parser.add_argument('-l', '--lut', help='path to the .cube file')
 parser.add_argument('-j', '--jpg', action='store_true', help='export raw as jpg')
-parser.add_argument('-p', '--preview', action='store_true', help='use thumbnail instead of full resolution')
-parser.add_argument('-s', '--scale', type=int, help='scale down thumbnail', default=4)
+parser.add_argument('-p', '--preview', action='store_true', help='use thumbnail instead of raw data')
+parser.add_argument('-s', '--scale', type=int, default=1, help='scale down thumbnail')
 args = parser.parse_args()
 
-parse_x3f(
-    args.file,
-    args.lut,
-    preview=args.preview,
-    scale=args.scale,
-    raw_to_jpg=args.jpg,
-)
+for x in args.file:
+    parse_x3f(
+        x,
+        args.lut,
+        preview=args.preview,
+        scale=args.scale,
+        raw_to_jpg=args.jpg,
+    )
